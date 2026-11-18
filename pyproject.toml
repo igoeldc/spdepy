@@ -1,0 +1,33 @@
+[project]
+name = "spdepy"
+version = "0.1.0"
+description = "A Python library for stochastic partial differential equations"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "BSD-3-Clause"
+dependencies = [
+    "numpy>=2.4.6",
+    "scipy>=1.17.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spdepy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.uv]
+package = true

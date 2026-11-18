@@ -1,0 +1,5 @@
+[ ] Set up Python package configuration and CI
+[ ] Define the mathematical scope of the initial release
+[ ] Design the equation and noise interfaces
+[ ] Implement a first benchmark SPDE
+[ ] Add reproducible numerical tests and convergence experiments
