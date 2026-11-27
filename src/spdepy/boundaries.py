@@ -1,34 +1,12 @@
-import math
-import numbers
+from spdepy._validation import valid_real
 
 
 class Dirichlet:
     """Class representing Dirichlet boundary conditions."""
 
     def __init__(self, left: float = 0.0, right: float = 0.0):
-        if isinstance(left, bool) or isinstance(
-            right, bool
-        ):  # check if left or right are bool
-            raise TypeError(
-                f"Invalid types: left ({type(left)}) and right ({type(right)}) must be real numerical scalars, not booleans"
-            )
-
-        if not isinstance(left, numbers.Real) or not isinstance(
-            right, numbers.Real
-        ):  # check if left and right are real numerical scalars
-            raise TypeError(
-                f"Invalid types: left ({type(left)}) and right ({type(right)}) must be real numerical scalars, excluding booleans"
-            )
-
-        self._left = float(left)
-        self._right = float(right)
-
-        if not math.isfinite(self._left) or not math.isfinite(
-            self._right
-        ):  # check if left and right are finite
-            raise ValueError(
-                f"Invalid boundary conditions: left ({self._left}) and right ({self._right}) must be finite"
-            )
+        self._left = valid_real("left", left)
+        self._right = valid_real("right", right)
 
     @property
     def left(self) -> float:
