@@ -30,5 +30,8 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 88
 
+[tool.ruff.lint]
+extend-select = ["D201", "D202", "D204", "D211"]
+
 [tool.uv]
 package = true
