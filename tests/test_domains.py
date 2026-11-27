@@ -15,7 +15,6 @@ VALID_INTERVALS = [
 RELATIVE_POSITIONS = [0, 0.25, 0.5, 0.75, 1]
 
 
-# Construction and properties
 @pytest.mark.parametrize("a, b", VALID_INTERVALS)
 def test_interval_construction(a, b):
     interval = domains.Interval(a, b)
@@ -53,7 +52,6 @@ def test_read_only_properties(attribute):
         setattr(interval, attribute, 10)
 
 
-# Membership
 @pytest.mark.parametrize("a, b", VALID_INTERVALS)
 @pytest.mark.parametrize("r", RELATIVE_POSITIONS)
 def test_interval_contains(a, b, r):
@@ -69,7 +67,6 @@ def test_interval_excludes_external_points(a, b):
     assert interval.contains(float(b) + 0.1) is False
 
 
-# Coordinate transformations
 @pytest.mark.parametrize("a, b", VALID_INTERVALS)
 @pytest.mark.parametrize("r", RELATIVE_POSITIONS)
 def test_interval_to_reference(a, b, r):
@@ -102,7 +99,6 @@ def test_interval_from_and_to_reference(a, b, r):
     assert interval.to_reference(interval.from_reference(ref_x)) == pytest.approx(ref_x)
 
 
-# Array support
 def test_to_reference_array():
     interval = domains.Interval(2, 6)
     x = np.array([2, 3, 4, 5, 6])
@@ -129,7 +125,6 @@ def test_array_round_trip(a, b):
     np.testing.assert_allclose(result, x, atol=1e-12)
 
 
-# Invalid endpoint values
 @pytest.mark.parametrize(
     "a, b",
     [
@@ -150,7 +145,6 @@ def test_reject_invalid_interval(a, b):
         domains.Interval(a, b)
 
 
-# Invalid endpoint types
 @pytest.mark.parametrize(
     "invalid_endpoint",
     [
@@ -175,7 +169,6 @@ def test_reject_invalid_endpoint_type(invalid_endpoint):
         domains.Interval(0, invalid_endpoint)
 
 
-# Numerical stability
 def test_large_finite_interval():
     interval = domains.Interval(1e308, 1.5e308)
     assert np.isfinite(interval.length)
@@ -188,7 +181,6 @@ def test_large_interval_to_reference():
     assert interval.to_reference(1e308) == pytest.approx(np.pi)
 
 
-# Extrapolation
 def test_to_reference_extrapolation():
     interval = domains.Interval(2, 6)
     assert interval.to_reference(0) == pytest.approx(-np.pi / 2)
