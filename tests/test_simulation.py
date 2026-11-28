@@ -11,6 +11,7 @@ from spdepy.domains import Interval
 from spdepy.models import LinearSpectralModel
 from spdepy.noise import SpectralWienerNoise
 from spdepy.operators import Laplacian
+from spdepy.results import SimulationResult
 from spdepy.simulation import Simulator
 from spdepy.temporal import ExactLinear
 
@@ -80,6 +81,13 @@ def test_integrator_identity(simulator):
     assert other.integrator is integrator
 
 
+def test_simulation_result_type(simulator, x0, rng):
+    result = simulator.simulate(x0, rng, times=[0.0, 1.0])
+
+    assert isinstance(result, SimulationResult)
+    assert result.model is simulator.model
+
+
 @pytest.mark.parametrize(
     "times",
     [
@@ -97,7 +105,8 @@ def test_integrator_identity(simulator):
     ],
 )
 def test_valid_explicit_times(simulator, x0, rng, times):
-    actual_times, trajectory = simulator.simulate(x0, rng, times=times)
+    result = simulator.simulate(x0, rng, times=times)
+    actual_times, trajectory = result.times, result.coeffs
 
     assert_array_equal(actual_times, np.asarray(times, dtype=np.float64))
     assert actual_times.dtype == np.float64
@@ -159,7 +168,8 @@ def test_nonfinite_consecutive_difference(simulator, x0, rng):
 
 @pytest.mark.parametrize("time", [-10.0, 0.0, 10.0])
 def test_single_time(simulator, x0, rng, time):
-    times, trajectory = simulator.simulate(x0, rng, times=[time])
+    result = simulator.simulate(x0, rng, times=[time])
+    times, trajectory = result.times, result.coeffs
 
     assert_array_equal(times, [time])
     assert trajectory.shape == (1, simulator.num_modes)
@@ -198,7 +208,8 @@ def test_times_from_dt(simulator, x0, rng, t_span, dt, expected, use_interval):
     if use_interval:
         t_span = Interval(a, b)
 
-    times, trajectory = simulator.simulate(x0, rng, t_span=t_span, dt=dt)
+    result = simulator.simulate(x0, rng, t_span=t_span, dt=dt)
+    times, trajectory = result.times, result.coeffs
 
     assert_allclose(times, expected, rtol=1e-14, atol=1e-15)
     assert times[0] == a
@@ -208,7 +219,8 @@ def test_times_from_dt(simulator, x0, rng, t_span, dt, expected, use_interval):
 
 
 def test_dt_preserves_small_positive_final_step(simulator, x0, rng):
-    times, _ = simulator.simulate(x0, rng, t_span=(0.0, 0.9), dt=0.3)
+    result = simulator.simulate(x0, rng, t_span=(0.0, 0.9), dt=0.3)
+    times = result.times
 
     last_full_step = 3 * 0.3
 
@@ -219,7 +231,8 @@ def test_dt_preserves_small_positive_final_step(simulator, x0, rng):
 
 
 def test_dt_exact_binary_multiple(simulator, x0, rng):
-    times, _ = simulator.simulate(x0, rng, t_span=(0.0, 1.0), dt=0.125)
+    result = simulator.simulate(x0, rng, t_span=(0.0, 1.0), dt=0.125)
+    times = result.times
 
     assert_array_equal(times, np.arange(9) * 0.125)
     assert_array_equal(np.diff(times), np.full(8, 0.125))
@@ -232,7 +245,8 @@ def test_dt_endpoint_rounding_overshoot(simulator, x0, rng):
 
     assert a + dt > b
 
-    times, _ = simulator.simulate(x0, rng, t_span=(a, b), dt=dt)
+    result = simulator.simulate(x0, rng, t_span=(a, b), dt=dt)
+    times = result.times
 
     assert_array_equal(times, [a, b])
 
@@ -265,7 +279,8 @@ def test_invalid_dt_types(simulator, x0, rng, dt):
 def test_times_from_num_steps(simulator, x0, rng, t_span, num_steps):
     a, b = t_span.bounds if isinstance(t_span, Interval) else t_span
 
-    times, trajectory = simulator.simulate(x0, rng, t_span=t_span, num_steps=num_steps)
+    result = simulator.simulate(x0, rng, t_span=t_span, num_steps=num_steps)
+    times, trajectory = result.times, result.coeffs
 
     assert len(times) == num_steps + 1
     assert times[0] == a
@@ -363,7 +378,8 @@ def test_all_time_specification_combinations(
     )
 
     if valid:
-        times, trajectory = simulator.simulate(x0, rng, **kwargs)
+        result = simulator.simulate(x0, rng, **kwargs)
+        times, trajectory = result.times, result.coeffs
 
         assert_array_equal(times, [0.0, 0.5, 1.0])
         assert trajectory.shape == (3, simulator.num_modes)
@@ -402,7 +418,8 @@ def test_unrepresentable_dt_grid(simulator, x0, rng):
     ],
 )
 def test_valid_initial_coefficients(simulator, rng, initial_condition):
-    _, trajectory = simulator.simulate(initial_condition, rng, times=[0.0, 1.0])
+    result = simulator.simulate(initial_condition, rng, times=[0.0, 1.0])
+    trajectory = result.coeffs
 
     assert_array_equal(trajectory[0], initial_condition)
 
@@ -469,11 +486,12 @@ def test_callable_initial_single_mode(a, b, mode):
     expected = np.zeros(simulator.num_modes)
     expected[mode - 1] = 1.0
 
-    _, trajectory = simulator.simulate(
+    result = simulator.simulate(
         initial_condition,
         np.random.default_rng(42),
         times=[0.0],
     )
+    trajectory = result.coeffs
 
     assert_allclose(trajectory[0], expected, rtol=1e-10, atol=1e-10)
 
@@ -487,19 +505,22 @@ def test_callable_initial_linear_combination(simulator, x0, rng):
             for k, coefficient in enumerate(x0, start=1)
         )
 
-    _, trajectory = simulator.simulate(initial_condition, rng, times=[0.0])
+    result = simulator.simulate(initial_condition, rng, times=[0.0])
+    trajectory = result.coeffs
 
     assert_allclose(trajectory[0], x0, rtol=1e-10, atol=1e-10)
 
 
 def test_callable_initial_zero(simulator, rng):
-    _, trajectory = simulator.simulate(lambda x: 0.0, rng, times=[0.0])
+    result = simulator.simulate(lambda x: 0.0, rng, times=[0.0])
+    trajectory = result.coeffs
 
     assert_array_equal(trajectory[0], np.zeros(simulator.num_modes))
 
 
 def test_callable_initial_constant(simulator, rng):
-    _, trajectory = simulator.simulate(lambda x: 1.0, rng, times=[0.0])
+    result = simulator.simulate(lambda x: 1.0, rng, times=[0.0])
+    trajectory = result.coeffs
 
     k = np.arange(1, simulator.num_modes + 1)
     expected = np.sqrt(2 / np.pi) * (1 - (-1) ** k) / k
@@ -511,11 +532,12 @@ def test_callable_initial_outside_truncation(simulator, rng):
     basis = simulator.model.eigenbasis
     mode = simulator.num_modes + 1
 
-    _, trajectory = simulator.simulate(
+    result = simulator.simulate(
         lambda x: basis.evaluate(mode, x),
         rng,
         times=[0.0],
     )
+    trajectory = result.coeffs
 
     assert_allclose(trajectory[0], 0.0, rtol=0, atol=1e-10)
 
@@ -621,7 +643,8 @@ def test_deterministic_analytical_solution(a, b, num_modes, theta, times):
 
     x0 = np.arange(1, num_modes + 1, dtype=np.float64)
 
-    times, trajectory = simulator.simulate(x0, np.random.default_rng(42), times=times)
+    result = simulator.simulate(x0, np.random.default_rng(42), times=times)
+    times, trajectory = result.times, result.coeffs
 
     k = np.arange(1, num_modes + 1)
     drift = -theta * (k * np.pi / (b - a)) ** 2
@@ -656,7 +679,8 @@ def test_simulation_matches_manual_integration(num_modes, theta, sigma, times):
     rng1 = np.random.default_rng(42)
     rng2 = np.random.default_rng(42)
 
-    actual_times, actual = simulator.simulate(x0, rng1, times=times)
+    result = simulator.simulate(x0, rng1, times=times)
+    actual_times, actual = result.times, result.coeffs
 
     expected = np.empty_like(actual)
     expected[0] = x0
@@ -674,45 +698,51 @@ def test_simulation_matches_manual_integration(num_modes, theta, sigma, times):
 
 @pytest.mark.parametrize("seed", [0, 1, 42, 12345])
 def test_reproducibility(simulator, x0, seed):
-    times1, trajectory1 = simulator.simulate(
+    result1 = simulator.simulate(
         x0,
         np.random.default_rng(seed),
         t_span=(0, 1),
         num_steps=20,
     )
+    times1, trajectory1 = result1.times, result1.coeffs
 
-    times2, trajectory2 = simulator.simulate(
+    result2 = simulator.simulate(
         x0,
         np.random.default_rng(seed),
         t_span=(0, 1),
         num_steps=20,
     )
+    times2, trajectory2 = result2.times, result2.coeffs
 
     assert_array_equal(times1, times2)
     assert_array_equal(trajectory1, trajectory2)
 
 
 def test_different_seeds(simulator, x0):
-    _, trajectory1 = simulator.simulate(
+    result1 = simulator.simulate(
         x0,
         np.random.default_rng(42),
         times=[0.0, 0.5, 1.0],
     )
+    trajectory1 = result1.coeffs
 
-    _, trajectory2 = simulator.simulate(
+    result2 = simulator.simulate(
         x0,
         np.random.default_rng(43),
         times=[0.0, 0.5, 1.0],
     )
+    trajectory2 = result2.coeffs
 
     assert_array_equal(trajectory1[0], trajectory2[0])
     assert not np.array_equal(trajectory1[1:], trajectory2[1:])
 
 
 def test_repeated_simulations_advance_rng(simulator, x0, rng):
-    _, trajectory1 = simulator.simulate(x0, rng, times=[0.0, 0.5, 1.0])
+    result1 = simulator.simulate(x0, rng, times=[0.0, 0.5, 1.0])
+    trajectory1 = result1.coeffs
 
-    _, trajectory2 = simulator.simulate(x0, rng, times=[0.0, 0.5, 1.0])
+    result2 = simulator.simulate(x0, rng, times=[0.0, 0.5, 1.0])
+    trajectory2 = result2.coeffs
 
     assert not np.array_equal(trajectory1[1:], trajectory2[1:])
 
@@ -726,18 +756,16 @@ def test_equivalent_time_specifications(simulator, x0):
         {"t_span": Interval(0, 1), "num_steps": 8},
     ]
 
-    expected_times, expected_trajectory = simulator.simulate(
+    result = simulator.simulate(
         x0,
         np.random.default_rng(42),
         **specifications[0],
     )
+    expected_times, expected_trajectory = result.times, result.coeffs
 
     for specification in specifications[1:]:
-        times, trajectory = simulator.simulate(
-            x0,
-            np.random.default_rng(42),
-            **specification,
-        )
+        result = simulator.simulate(x0, np.random.default_rng(42), **specification)
+        times, trajectory = result.times, result.coeffs
 
         assert_array_equal(times, expected_times)
         assert_array_equal(trajectory, expected_trajectory)
@@ -751,36 +779,40 @@ def test_callable_and_coefficient_equivalence(simulator):
 
     coefficients = basis.project(initial_condition, simulator.num_modes)
 
-    times1, trajectory1 = simulator.simulate(
+    result1 = simulator.simulate(
         initial_condition,
         np.random.default_rng(42),
         t_span=(0, 1),
         num_steps=10,
     )
+    times1, trajectory1 = result1.times, result1.coeffs
 
-    times2, trajectory2 = simulator.simulate(
+    result2 = simulator.simulate(
         coefficients,
         np.random.default_rng(42),
         t_span=(0, 1),
         num_steps=10,
     )
+    times2, trajectory2 = result2.times, result2.coeffs
 
     assert_array_equal(times1, times2)
     assert_array_equal(trajectory1, trajectory2)
 
 
 def test_time_translation_invariance(simulator, x0):
-    _, trajectory1 = simulator.simulate(
+    result1 = simulator.simulate(
         x0,
         np.random.default_rng(42),
         times=[0.0, 0.25, 0.5, 1.0],
     )
+    trajectory1 = result1.coeffs
 
-    _, trajectory2 = simulator.simulate(
+    result2 = simulator.simulate(
         x0,
         np.random.default_rng(42),
         times=[-2.0, -1.75, -1.5, -1.0],
     )
+    trajectory2 = result2.coeffs
 
     assert_array_equal(trajectory1, trajectory2)
 
@@ -789,11 +821,14 @@ def test_simulation_continuation(simulator, x0):
     rng1 = np.random.default_rng(42)
     rng2 = np.random.default_rng(42)
 
-    _, full = simulator.simulate(x0, rng1, times=[0, 0.25, 0.5, 0.75, 1])
+    full_result = simulator.simulate(x0, rng1, times=[0, 0.25, 0.5, 0.75, 1])
+    full = full_result.coeffs
 
-    _, first = simulator.simulate(x0, rng2, times=[0, 0.25, 0.5])
+    first_result = simulator.simulate(x0, rng2, times=[0, 0.25, 0.5])
+    first = first_result.coeffs
 
-    _, second = simulator.simulate(first[-1], rng2, times=[0.5, 0.75, 1])
+    second_result = simulator.simulate(first[-1], rng2, times=[0.5, 0.75, 1])
+    second = second_result.coeffs
 
     combined = np.concatenate([first, second[1:]], axis=0)
 
@@ -803,12 +838,13 @@ def test_simulation_continuation(simulator, x0):
 def test_zero_initial_and_zero_noise():
     simulator = make_simulator(sigma=0.0)
 
-    _, trajectory = simulator.simulate(
+    result = simulator.simulate(
         np.zeros(simulator.num_modes),
         np.random.default_rng(42),
         t_span=(0, 1),
         num_steps=20,
     )
+    trajectory = result.coeffs
 
     assert_array_equal(trajectory, np.zeros_like(trajectory))
 
@@ -818,12 +854,13 @@ def test_zero_covariance():
 
     x0 = np.ones(simulator.num_modes)
 
-    times, trajectory = simulator.simulate(
+    result = simulator.simulate(
         x0,
         np.random.default_rng(42),
         t_span=(0, 1),
         num_steps=10,
     )
+    times, trajectory = result.times, result.coeffs
 
     k = np.arange(1, simulator.num_modes + 1)
     expected = np.exp(-times[:, None] * k[None, :] ** 2)
@@ -834,12 +871,13 @@ def test_zero_covariance():
 def test_finite_rank_noise():
     simulator = make_simulator(eigenvalues=lambda k: 1.0 if k <= 2 else 0.0)
 
-    _, trajectory = simulator.simulate(
+    result = simulator.simulate(
         np.zeros(simulator.num_modes),
         np.random.default_rng(42),
         t_span=(0, 1),
         num_steps=20,
     )
+    trajectory = result.coeffs
 
     assert np.any(trajectory[1:, :2] != 0)
     assert_array_equal(
@@ -868,11 +906,13 @@ def test_input_times_not_modified(simulator, x0, rng):
 def test_trajectory_does_not_alias_initial_condition(simulator, x0, rng):
     original = x0.copy()
 
-    _, trajectory = simulator.simulate(x0, rng, times=[0.0, 1.0])
+    result = simulator.simulate(x0, rng, times=[0.0, 1.0])
+    trajectory = result.coeffs
 
     assert not np.shares_memory(x0, trajectory)
 
-    trajectory[0] = 0.0
+    with pytest.raises(ValueError):
+        trajectory[0] = 0.0
 
     assert_array_equal(x0, original)
 
@@ -883,16 +923,19 @@ def test_read_only_inputs(simulator, x0, rng):
     x0.setflags(write=False)
     times.setflags(write=False)
 
-    actual_times, trajectory = simulator.simulate(x0, rng, times=times)
+    result = simulator.simulate(x0, rng, times=times)
+    actual_times, trajectory = result.times, result.coeffs
 
     assert_array_equal(actual_times, times)
     assert_array_equal(trajectory[0], x0)
 
 
 def test_independent_trajectory_arrays(simulator, x0, rng):
-    _, trajectory1 = simulator.simulate(x0, rng, times=[0.0, 1.0])
+    result1 = simulator.simulate(x0, rng, times=[0.0, 1.0])
+    trajectory1 = result1.coeffs
 
-    _, trajectory2 = simulator.simulate(x0, rng, times=[0.0, 1.0])
+    result2 = simulator.simulate(x0, rng, times=[0.0, 1.0])
+    trajectory2 = result2.coeffs
 
     assert not np.shares_memory(trajectory1, trajectory2)
 
@@ -997,7 +1040,8 @@ def test_step_call_count_and_arguments(simulator, x0, rng, monkeypatch):
 
     monkeypatch.setattr(ExactLinear, "step", tracked_step)
 
-    times, trajectory = simulator.simulate(x0, rng, times=[0.0, 0.1, 0.4, 1.0])
+    result = simulator.simulate(x0, rng, times=[0.0, 0.1, 0.4, 1.0])
+    times, trajectory = result.times, result.coeffs
 
     assert len(calls) == len(times) - 1
 

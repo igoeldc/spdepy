@@ -8,10 +8,12 @@ from spdepy._validation import (
     valid_pos_real,
     valid_real_array,
     valid_rng,
+    valid_times,
     valid_type,
 )
 from spdepy.domains import Interval
 from spdepy.models import LinearSpectralModel
+from spdepy.results import SimulationResult
 from spdepy.temporal import ExactLinear
 
 
@@ -36,18 +38,6 @@ class Simulator:
         """Return the number of modes in the SPDE model."""
         return self.model.num_modes
 
-    def _valid_times(self, times: ArrayLike) -> tuple[np.ndarray, np.ndarray]:
-        """Validate the times array."""
-        times = valid_real_array("times", times, ndim=1, allow_empty=False)
-        dts = np.diff(times)
-        if not np.all(dts > 0):
-            raise ValueError("Invalid value: times must be strictly increasing")
-        if not np.all(np.isfinite(dts)):
-            raise ValueError(
-                "Invalid value: times must have finite consecutive differences"
-            )
-        return times, dts
-
     def _valid_t_span(self, t_span: Interval | tuple[float, float]) -> Interval:
         """Validate the time span."""
         if isinstance(t_span, tuple):
@@ -66,7 +56,7 @@ class Simulator:
         t_span: Interval | tuple[float, float] | None = None,
         dt: float | None = None,
         num_steps: int | None = None,
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> SimulationResult:
         """Simulate the SPDE given an initial condition and times."""
         rng = valid_rng(rng)
         times, dts = self._resolve_times(times, t_span, dt, num_steps)
@@ -78,7 +68,7 @@ class Simulator:
         for t in range(1, len(times)):
             trajectory[t] = self._integrator.step(trajectory[t - 1], dts[t - 1], rng)
 
-        return times, trajectory
+        return SimulationResult(self.model, times, trajectory)
 
     def _times_from_dt(
         self, t_span: Interval | tuple[float, float], dt: float
@@ -121,7 +111,7 @@ class Simulator:
                     "Invalid combination: Provide either times or t_span/dt/num_steps, not both."
                 )
 
-            return self._valid_times(times)
+            return valid_times(times)
 
         if dt is not None and num_steps is not None:
             raise ValueError(
@@ -140,7 +130,7 @@ class Simulator:
                 "Invalid combination: t_span requires either dt or num_steps."
             )
 
-        return self._valid_times(times)
+        return valid_times(times)
 
     def _resolve_initial_condition(
         self, initial_condition: ArrayLike | Callable[[float], float]

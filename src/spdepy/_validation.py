@@ -134,3 +134,16 @@ def valid_not_empty(name: str, value: np.ndarray) -> np.ndarray:
         raise ValueError(f"Invalid value: {name} must not be empty")
 
     return value
+
+
+def valid_times(times: ArrayLike) -> tuple[np.ndarray, np.ndarray]:
+    """Validate the times array."""
+    times = valid_real_array("times", times, ndim=1, allow_empty=False)
+    dts = np.diff(times)
+    if not np.all(dts > 0):
+        raise ValueError("Invalid value: times must be strictly increasing")
+    if not np.all(np.isfinite(dts)):
+        raise ValueError(
+            "Invalid value: times must have finite consecutive differences"
+        )
+    return times, dts
