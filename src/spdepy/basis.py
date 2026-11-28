@@ -64,7 +64,7 @@ class SineBasis:
         T = self._domain.to_reference(xs)
 
         matrix = (
-            np.sin(n[None, :] * T[:, None]) * np.sqrt(2) / np.sqrt(self._domain.length) # type: ignore
+            np.sin(n[None, :] * T[:, None]) * np.sqrt(2) / np.sqrt(self._domain.length)  # type: ignore
         )
 
         return matrix
