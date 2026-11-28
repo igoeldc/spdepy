@@ -7,26 +7,35 @@
 
 ## Stage 1 — Mathematical Core
 - [x] Define the broad mathematical scope
-- [ ] Specify initial mathematical assumptions
-- [ ] Design core mathematical interfaces
-- [ ] Implement domains and boundary conditions
-- [ ] Implement eigenbases and differential operators
-- [ ] Implement noise and covariance structures
-- [ ] Implement spectral Galerkin projection and reconstruction
-- [ ] Implement finite-dimensional stochastic model representations
+- [x] Specify initial mathematical assumptions
+- [x] Design core mathematical interfaces
+- [x] Implement domains and boundary conditions
+- [x] Implement eigenbases and differential operators
+- [x] Implement noise and covariance structures
+- [x] Implement spectral Galerkin projection and reconstruction
+- [x] Implement finite-dimensional stochastic model representations
+- [x] Implement centralized input validation
 
 ## Stage 2 — Minimum Viable Simulator
-- [ ] Implement exact linear stochastic time integration
-- [ ] Implement the stochastic heat equation
-- [ ] Implement simulation and result interfaces
+- [x] Implement exact linear stochastic time integration
+- [x] Implement the stochastic heat equation
+- [x] Implement single-path simulation
+- [x] Support explicit, fixed-step, and fixed-count temporal grids
+- [x] Support spectral and callable initial conditions
+- [ ] Implement simulation result interfaces
+- [ ] Implement spatiotemporal solution reconstruction
 - [ ] Implement basic visualization
 - [ ] Validate against analytical benchmarks
-- [ ] Publish the first functional release
+- [ ] Finalize the initial public API
+- [ ] Create introductory examples and tutorials
+- [ ] Publish the first functional release (v0.1.0)
 
 ## Stage 3 — General Linear SPDEs
-- [ ] Support arbitrary intervals and additional boundary conditions
+- [x] Support arbitrary bounded intervals
+- [ ] Support additional boundary conditions
 - [ ] Support fractional operators and operator arithmetic
 - [ ] Support additional noise and covariance structures
+- [ ] Support non-diagonal spectral covariance structures
 - [ ] Implement general linear transition calculations
 - [ ] Implement additional stochastic time integrators
 - [ ] Implement Monte Carlo simulation
