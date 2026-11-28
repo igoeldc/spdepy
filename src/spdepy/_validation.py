@@ -101,7 +101,7 @@ def valid_type(name: str, value: object, expected_type: type[T]) -> T:
     return value
 
 
-def valid_rng(rng: np.random.Generator) -> np.random.Generator:
+def valid_rng(rng: object) -> np.random.Generator:
     """Validate that rng is an instance of np.random.Generator."""
     return valid_type("rng", rng, np.random.Generator)
 
