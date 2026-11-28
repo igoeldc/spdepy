@@ -16,17 +16,6 @@ def valid_number(name, value, num_type):
         )
 
 
-def valid_real(name, value) -> float:
-    valid_not_bool(name, value)
-    valid_number(name, value, Real)
-    value = float(value)
-
-    if not math.isfinite(value):
-        raise ValueError(f"Invalid value: {name} ({value}) must be finite")
-
-    return value
-
-
 def valid_pos_int(name, value) -> int:
     valid_not_bool(name, value)
     valid_number(name, value, Integral)
@@ -34,6 +23,24 @@ def valid_pos_int(name, value) -> int:
         raise ValueError(f"Invalid value: {name} ({value}) must be a positive integer")
 
     return int(value)
+
+
+def valid_real(name, value) -> float:
+    valid_not_bool(name, value)
+    valid_number(name, value, Real)
+    value = float(value)
+    if not math.isfinite(value):
+        raise ValueError(f"Invalid value: {name} ({value}) must be finite")
+
+    return value
+
+
+def valid_nonneg_real(name, value) -> float:
+    value = valid_real(name, value)
+    if value < 0:
+        raise ValueError(f"Invalid value: {name} ({value}) must be non-negative")
+
+    return value
 
 
 def valid_real_array(name, value) -> np.ndarray:
