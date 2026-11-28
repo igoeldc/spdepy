@@ -96,13 +96,5 @@ class LinearSpectralModel:
         return self._sigma**2 * self._noise.covariance.matrix(self._num_modes)
 
     def drift(self, coeffs: ArrayLike) -> np.ndarray:
-        coeffs = valid_real_array("coeffs", coeffs)
-        if coeffs.ndim != 1:
-            raise ValueError(
-                f"Invalid value: coeffs ({coeffs}) must be a one-dimensional array"
-            )
-        if coeffs.shape[0] != self._num_modes:
-            raise ValueError(
-                f"Invalid value: coeffs ({coeffs}) must have length equal to num_modes ({self._num_modes})"
-            )
+        coeffs = valid_real_array("coeffs", coeffs, ndim=1, shape=(self._num_modes,))
         return self.drift_eigenvalues * coeffs

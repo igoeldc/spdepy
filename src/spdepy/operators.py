@@ -63,13 +63,7 @@ class Laplacian:
 
     def apply(self, coeffs: ArrayLike) -> np.ndarray:
         """Apply the Laplacian to sine basis coefficients and return the resulting spectral coefficients."""
-        coeffs = valid_real_array("coeffs", coeffs)
-        if coeffs.ndim != 1:
-            raise ValueError(
-                f"Invalid value: coeffs ({coeffs}) must be a one-dimensional array"
-            )
-        if coeffs.size == 0:
-            raise ValueError(f"Invalid value: coeffs ({coeffs}) must not be empty")
+        coeffs = valid_real_array("coeffs", coeffs, ndim=1, allow_empty=False)
         num_modes = coeffs.size
         eigenvalues = self.eigenvalues(num_modes)
         return eigenvalues * coeffs

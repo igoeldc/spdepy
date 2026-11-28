@@ -4,7 +4,11 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.integrate import quad
 
-from spdepy._validation import valid_pos_int, valid_real_array
+from spdepy._validation import (
+    valid_dims,
+    valid_pos_int,
+    valid_real_array,
+)
 from spdepy.domains import Interval
 
 
@@ -55,10 +59,7 @@ class SineBasis:
         """Returns a matrix where each row corresponds to the evaluation of the sine basis functions at a point in xs. Output shape is `(len(xs), num_modes)`."""
         num_modes = valid_pos_int("num_modes", num_modes)
         xs = self._valid_coords(xs)
-        if xs.ndim != 1:
-            raise ValueError(
-                f"Invalid value: xs ({xs}) must be a one-dimensional array"
-            )
+        xs = valid_dims("xs", xs, 1)
 
         n = np.arange(1, num_modes + 1)
         T = self._domain.to_reference(xs)
@@ -91,14 +92,7 @@ class SineBasis:
 
     def reconstruct(self, coeffs: ArrayLike, xs: ArrayLike) -> np.ndarray:
         """Returns the reconstruction of a function from its sine basis coefficients at points xs. Output shape is `(len(xs),)`."""
-        coeffs = valid_real_array("coeffs", coeffs)
-        if coeffs.ndim != 1:
-            raise ValueError(
-                f"Invalid value: coeffs ({coeffs}) must be a one-dimensional array"
-            )
-        if coeffs.size == 0:
-            raise ValueError(f"Invalid value: coeffs ({coeffs}) must not be empty")
-
+        coeffs = valid_real_array("coeffs", coeffs, ndim=1, allow_empty=False)
         num_modes = coeffs.size
 
         return self.matrix(num_modes, xs) @ coeffs

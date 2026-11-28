@@ -59,13 +59,7 @@ class SpectralCovariance:
 
     def apply(self, coeffs: ArrayLike) -> np.ndarray:
         """Applies the spectral covariance operator to a vector of coefficients."""
-        coeffs = valid_real_array("coeffs", coeffs)
-        if coeffs.ndim != 1:
-            raise ValueError(
-                f"Invalid value: coeffs ({coeffs}) must be a one-dimensional array"
-            )
-        if coeffs.size == 0:
-            raise ValueError(f"Invalid value: coeffs ({coeffs}) must not be empty")
+        coeffs = valid_real_array("coeffs", coeffs, ndim=1, allow_empty=False)
         num_modes = coeffs.size
         eigenvalues = self.eigenvalues(num_modes)
         return eigenvalues * coeffs
